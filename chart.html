@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Candlestick Chart with Watchlist & Sorting</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<style>
+    :root {
+        --bg-color: #f8f9fa;
+        --container-bg-color: #ffffff;
+        --text-color: #343a40;
+        --border-color: #e9ecef;
+        --primary-color: #007bff;
+        --primary-hover-color: #0056b3;
+        --accent-green: #28a745;
+        --accent-red: #dc3545;
+        --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body.dark-mode {
+        --bg-color: #121212;
+        --container-bg-color: #1e1e1e;
+        --text-color: #e0e0e0;
+        --border-color: #444444;
+        --primary-color: #2e8b57;
+        --primary-hover-color: #256c45;
+    }
+
+    body {
+        font-family: var(--font-family);
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 20px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-sizing: border-box;
+        transition: background-color 0.3s, color 0.3s;
+    }
+
+    .main-container {
+        display: flex;
+        width: 100%;
+        max-width: 1400px;
+        flex-grow: 1;
+        gap: 20px;
+    }
+
+    .chart-container,
+    .watchlist-container {
+        background-color: var(--container-bg-color);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s;
+    }
+
+    .chart-container {
+        flex: 3;
+    }
+
+    .watchlist-container {
+        flex: 1;
+        max-height: 800px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    h2, h3 {
+        text-align: center;
+        color: var(--text-color);
+        transition: color 0.3s;
+    }
+
+    .controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .controls label,
+    .controls select,
+    .controls button {
+        font-size: 1rem;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background-color: var(--container-bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    }
+
+    .controls button {
+        background-color: var(--primary-color);
+        color: white;
+        cursor: pointer;
+        border: none;
+    }
+
+    .controls button:hover {
+        background-color: var(--primary-hover-color);
+    }
+
+    #chart {
+        padding-top: 20px;
+    }
+
+    .watchlist-header {
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+
+    .watchlist-header h3 {
+        margin: 0;
+        text-align: left;
+    }
+
+    .sort-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        align-self: flex-end;
+        margin-bottom: 15px;
+    }
+
+    #sortAscBtn,
+    #sortDescBtn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+        padding: 0 5px;
+    }
+
+    .range-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .range-inputs {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .controls-box {
+        background-color: #f1f3f5; /* Light mode color */
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    body.dark-mode .controls-box {
+        background-color: #282828; /* Dark mode color */
+        border: 1px solid var(--border-color);
+    }
+
+    #watchlist {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .watchlist-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .watchlist-item:hover,
+    .watchlist-item.active {
+        background-color: var(--border-color);
+    }
+
+    .watchlist-item.active.dark-mode {
+        background-color: #333;
+    }
+    
+    .watchlist-item .symbol {
+        font-weight: bold;
+        flex: 1;
+    }
+
+    .watchlist-item .returns {
+        color: var(--accent-green);
+    }
+
+    .watchlist-item .returns.negative {
+        color: var(--accent-red);
+    }
+</style>
+</head>
+<body id="app-body">
+    <div class="main-container">
+        <div class="chart-container">
+            <h2>Stock Candlestick Chart</h2>
+            <div class="controls">
+                <label for="period">Period:</label>
+                <select id="period">
+                    <option value="1mo">1 Month</option>
+                    <option value="3mo">3 Months</option>
+                    <option value="6mo" selected>6 Months</option>
+                    <option value="1y">1 Year</option>
+                    <option value="5y">5 Years</option>
+                </select>
+
+                <label for="interval">Interval:</label>
+                <select id="interval">
+                    <option value="1d" selected>1 Day</option>
+                    <option value="1wk">1 Week</option>
+                    <option value="1mo">1 Month</option>
+                </select>
+
+                <button id="zoomInBtn">Zoom In Y</button>
+                <button id="zoomOutBtn">Zoom Out Y</button>
+                <button id="toggle-theme-btn">☀️/🌙</button>
+            </div>
+            <div id="chart"></div>
+        </div>
+
+        <div class="watchlist-container">
+            <div class="watchlist-header">
+                <h3>My Watchlist</h3>
+            </div>
+            <div class="controls-box">
+                <div class="range-controls">
+                    <label>Filter by Rank:</label>
+                    <div class="range-inputs">
+                        <input type="number" id="startRank" value="1" min="1" style="width: 50px;">
+                        <span>to</span>
+                        <input type="number" id="endRank" value="50" min="1" style="width: 50px;">
+                        <button id="applyRangeBtn">Apply</button>
+                    </div>
+                </div>
+            </div>
+            <div class="sort-controls">
+                <label for="returnPeriod">Sort by:</label>
+                <select id="returnPeriod">
+                    <option value="1 Year Returns">1Y</option>
+                    <option value="2 Year Returns">2Y</option>
+                    <option value="5 Year Returns">5Y</option>
+                    <option value="10 Year Returns">10Y</option>
+                </select>
+                <button id="sortAscBtn">▲</button>
+                <button id="sortDescBtn">▼</button>
+            </div>
+            <ul id="watchlist"></ul>
+        </div>
+    </div>
+
+    <script>
+        const periodSelect = document.getElementById('period');
+        const intervalSelect = document.getElementById('interval');
+        const zoomInBtn = document.getElementById('zoomInBtn');
+        const zoomOutBtn = document.getElementById('zoomOutBtn');
+        const watchlistEl = document.getElementById('watchlist');
+        const returnPeriodSelect = document.getElementById('returnPeriod');
+        const sortAscBtn = document.getElementById('sortAscBtn');
+        const sortDescBtn = document.getElementById('sortDescBtn');
+        const startRankInput = document.getElementById('startRank');
+        const endRankInput = document.getElementById('endRank');
+        const applyRangeBtn = document.getElementById('applyRangeBtn');
+        const toggleThemeBtn = document.getElementById('toggle-theme-btn');
+        const body = document.getElementById('app-body');
+
+        let chart = null;
+        let yAxisMin = 0;
+        let yAxisMax = 0;
+        let activeTicker = '';
+
+        // Function to format Y-axis labels
+        function formatYAxisLabel(value) {
+            if (Math.abs(value) >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+            if (Math.abs(value) >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+            if (Math.abs(value) >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+            return value.toFixed(2); // Ensure two decimal places for smaller numbers
+        }
+
+
+        // Fetches stock data and updates the chart
+        function updateChart(ticker) {
+            if (!ticker) return;
+            activeTicker = ticker;
+
+            const period = periodSelect.value;
+            const interval = intervalSelect.value;
+            const url = `http://127.0.0.1:5000/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw err;
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        document.querySelector("#chart").innerHTML = `<p style='text-align:center; color: red;'>Error: ${data.error}</p>`;
+                        return;
+                    }
+
+                    const seriesData = data.map(d => ({
+                        x: d.x,
+                        y: d.y
+                    }));
+                    let allYValues = [];
+                    seriesData.forEach(item => {
+                        allYValues.push(...item.y);
+                    });
+                    yAxisMin = Math.min(...allYValues);
+                    yAxisMax = Math.max(...allYValues);
+
+                    const isDarkMode = body.classList.contains('dark-mode');
+                    const themeMode = isDarkMode ? 'dark' : 'light';
+
+                    if (chart) {
+                        chart.updateSeries([{
+                            data: seriesData
+                        }]);
+                        chart.updateOptions({
+                            title: {
+                                text: `${ticker} Stock Price`
+                            },
+                            yaxis: {
+                                min: yAxisMin,
+                                max: yAxisMax,
+                                labels: {
+                                    formatter: formatYAxisLabel // Apply formatter on update
+                                }
+                            },
+                            theme: {
+                                mode: themeMode
+                            }
+                        });
+                    } else {
+                        const options = {
+                            chart: {
+                                type: 'candlestick',
+                                height: 618,
+                                toolbar: {
+                                    show: true,
+                                    tools: {
+                                        download: true,
+                                        selection: true,
+                                        zoom: true,
+                                        zoomin: true,
+                                        zoomout: true,
+                                        pan: true,
+                                        reset: true
+                                    },
+                                    autoSelected: 'pan'
+                                },
+                                zoom: {
+                                    enabled: true
+                                }
+                            },
+                            series: [{
+                                data: seriesData
+                            }],
+                            title: {
+                                text: `${ticker} Stock Price`,
+                                align: 'left'
+                            },
+                            xaxis: {
+                                type: 'category',
+                                labels: {
+                                    show: false
+                                }
+                            },
+                            yaxis: {
+                                title: {
+                                    text: 'Price (USD)'
+                                },
+                                tooltip: {
+                                    enabled: true
+                                },
+                                labels: {
+                                    formatter: formatYAxisLabel // Apply formatter on initial creation
+                                }
+                            },
+                            tooltip: {
+                                x: {
+                                    formatter: (value) => new Date(value).toDateString()
+                                },
+                                y: {
+                                    formatter: formatYAxisLabel // Also apply to tooltip
+                                },
+                                theme: themeMode === 'dark' ? 'light' : 'dark' // Ensure tooltip is readable
+                            },
+                            theme: {
+                                mode: themeMode
+                            }
+                        };
+                        chart = new ApexCharts(document.querySelector("#chart"), options);
+                        chart.render();
+                    }
+                    
+                        zoomY(1.4);
+                    
+                })
+                .catch(error => {
+                    const errorMessage = error.error || 'An unknown error occurred.';
+                    document.querySelector("#chart").innerHTML = `<p style='text-align:center; color: red;'>Error: ${errorMessage}</p>`;
+                });
+        }
+
+        // Fetches watchlist data and populates the list
+        function updateWatchlist(sortOrder, sortBy) {
+            const startRank = startRankInput.value;
+            const endRank = endRankInput.value;
+
+            let url = `http://127.0.0.1:5000/api/watchlist?start_rank=${startRank}&end_rank=${endRank}`;
+            if (sortBy) {
+                url += `&sort=${sortOrder}&sortBy=${sortBy}`;
+            }
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    watchlistEl.innerHTML = '';
+                    if (data.error) {
+                        watchlistEl.innerHTML = `<li style='color:red;'>${data.error}</li>`;
+                        return;
+                    }
+                    data.forEach(item => {
+                        const li = document.createElement('li');
+                        li.classList.add('watchlist-item');
+                        const selectedReturn = item[sortBy || '1 Year Returns'];
+                        const returnsClass = selectedReturn >= 0 ? 'returns' : 'returns negative';
+                        li.innerHTML = `
+                            <span class="symbol">${item.Symbols}</span>
+                            <span class="${returnsClass}">${(selectedReturn * 100).toFixed(2)}%</span>
+                        `;
+
+                        li.addEventListener('click', () => {
+                            updateChart(item.Symbols);
+                            document.querySelectorAll('.watchlist-item').forEach(li => li.classList.remove('active'));
+                            li.classList.add('active');
+                        });
+                        watchlistEl.appendChild(li);
+                    });
+                    if (data.length > 0) {
+                        updateChart(data[0].Symbols);
+                        watchlistEl.children[0].classList.add('active');
+                    }
+                })
+                .catch(error => {
+                    watchlistEl.innerHTML = "<li style='color:red;'>Could not load watchlist.</li>";
+                });
+        }
+
+        // Functions for chart zoom
+        function zoomY(factor) {
+            if (chart) {
+                const currentRange = yAxisMax - yAxisMin;
+                const center = (yAxisMin + yAxisMax) / 2;
+                const newRange = currentRange * factor;
+                yAxisMin = center - newRange / 2;
+                yAxisMax = center + newRange / 2;
+                chart.updateOptions({
+                    yaxis: {
+                        min: yAxisMin,
+                        max: yAxisMax,
+                        labels: {
+                            formatter: formatYAxisLabel // Re-apply formatter during zoom
+                        }
+                    }
+                });
+            }
+        }
+        zoomInBtn.addEventListener('click', () => zoomY(0.9));
+        zoomOutBtn.addEventListener('click', () => zoomY(1.1));
+
+        // Event listeners for watchlist controls
+        sortAscBtn.addEventListener('click', () => {
+            const sortBy = returnPeriodSelect.value;
+            updateWatchlist('asc', sortBy);
+        });
+        sortDescBtn.addEventListener('click', () => {
+            const sortBy = returnPeriodSelect.value;
+            updateWatchlist('desc', sortBy);
+        });
+        returnPeriodSelect.addEventListener('change', () => {
+            const sortBy = returnPeriodSelect.value;
+            const currentSortOrder = 'asc'; // Default sort order for a new sort type
+            updateWatchlist(currentSortOrder, sortBy);
+        });
+        applyRangeBtn.addEventListener('click', () => {
+            updateWatchlist(undefined, undefined); // Resets sorting
+        });
+
+        // Event listeners for chart controls
+        periodSelect.addEventListener('change', () => updateChart(activeTicker));
+        intervalSelect.addEventListener('change', () => updateChart(activeTicker));
+
+        // Theme toggle functionality
+        toggleThemeBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDarkMode = body.classList.contains('dark-mode');
+            const themeMode = isDarkMode ? 'dark' : 'light';
+            if (chart) { // Ensure chart exists before updating
+                chart.updateOptions({
+                    theme: {
+                        mode: themeMode
+                    },
+                    tooltip: {
+                        theme: isDarkMode ? 'light' : 'dark'
+                    },
+                    yaxis: { // Also re-apply formatter when theme changes
+                        labels: {
+                            formatter: formatYAxisLabel
+                        }
+                    }
+                });
+            }
+        });
+
+        // Initial load
+        updateWatchlist();
+    </script>
+</body>
+</html>
