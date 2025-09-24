@@ -237,6 +237,13 @@
         <div class="watchlist-container">
             <div class="watchlist-header">
                 <h3>My Watchlist</h3>
+                <div class="controls">
+                    <label for="watchlist-selector">Select Watchlist:</label>
+                    <select id="watchlist-selector">
+                        <option value="india">India</option>
+                        <option value="usa">USA</option>
+                    </select>
+                </div>
             </div>
             <div class="controls-box">
                 <div class="range-controls">
@@ -270,6 +277,7 @@
         const zoomInBtn = document.getElementById('zoomInBtn');
         const zoomOutBtn = document.getElementById('zoomOutBtn');
         const watchlistEl = document.getElementById('watchlist');
+        const watchlistSelector = document.getElementById('watchlist-selector');
         const returnPeriodSelect = document.getElementById('returnPeriod');
         const sortAscBtn = document.getElementById('sortAscBtn');
         const sortDescBtn = document.getElementById('sortDescBtn');
@@ -426,8 +434,9 @@
         function updateWatchlist(sortOrder, sortBy) {
             const startRank = startRankInput.value;
             const endRank = endRankInput.value;
+            const watchlist = watchlistSelector.value;
 
-            let url = `http://127.0.0.1:5000/api/watchlist?start_rank=${startRank}&end_rank=${endRank}`;
+            let url = `http://127.0.0.1:5000/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;
             if (sortBy) {
                 url += `&sort=${sortOrder}&sortBy=${sortBy}`;
             }
@@ -510,6 +519,9 @@
         // Event listeners for chart controls
         periodSelect.addEventListener('change', () => updateChart(activeTicker));
         intervalSelect.addEventListener('change', () => updateChart(activeTicker));
+        watchlistSelector.addEventListener('change', () => {
+            updateWatchlist();
+        });
 
         // Theme toggle functionality
         toggleThemeBtn.addEventListener('click', () => {
