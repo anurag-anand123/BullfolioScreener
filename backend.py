@@ -51,7 +51,11 @@ def load_watchlist_data(watchlist_name):
                 row['2 Year Returns'] = float(row.get('2 Year Returns', 0))
                 row['5 Year Returns'] = float(row.get('5 Year Returns', 0))
                 row['10 Year Returns'] = float(row.get('10 Year Returns', 0))
-                data.append(row)
+                
+                # Exclude the row if '1 Year Returns' is exactly 0
+                if row['1 Year Returns'] != 0:
+                    data.append(row)
+                    
         _watchlist_cache[watchlist_name] = data
         return data
     except Exception as e:
