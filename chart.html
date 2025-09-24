@@ -201,12 +201,25 @@
     .watchlist-item .returns.negative {
         color: var(--accent-red);
     }
+    
+    .watchlist-nav-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        padding: 0 10px; /* Add padding to align with watchlist items */
+    }
+    
+    .chart-nav-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
 </style>
 </head>
 <body id="app-body">
     <div class="main-container">
         <div class="chart-container">
-            <h2>Stock Candlestick Chart</h2>
+            <h2 id="chart-title">Stock Candlestick Chart</h2>
             <div class="controls">
                 <label for="period">Period:</label>
                 <select id="period">
@@ -232,6 +245,10 @@
                 <button id="toggle-theme-btn">☀️/🌙</button>
             </div>
             <div id="chart"></div>
+            <div class="chart-nav-buttons">
+                <button id="prevChartBtn">Previous</button>
+                <button id="nextChartBtn">Next</button>
+            </div>
         </div>
 
         <div class="watchlist-container">
@@ -268,6 +285,10 @@
                 <button id="sortDescBtn">▼</button>
             </div>
             <ul id="watchlist"></ul>
+            <div class="watchlist-nav-buttons">
+                <button id="prevStockBtn">Previous</button>
+                <button id="nextStockBtn">Next</button>
+            </div>
         </div>
     </div>
 
@@ -286,6 +307,11 @@
         const applyRangeBtn = document.getElementById('applyRangeBtn');
         const toggleThemeBtn = document.getElementById('toggle-theme-btn');
         const body = document.getElementById('app-body');
+        const prevStockBtn = document.getElementById('prevStockBtn');
+        const nextStockBtn = document.getElementById('nextStockBtn');
+        const prevChartBtn = document.getElementById('prevChartBtn');
+        const nextChartBtn = document.getElementById('nextChartBtn');
+        const chartTitleEl = document.getElementById('chart-title');
 
         let chart = null;
         let yAxisMin = 0;
@@ -305,6 +331,9 @@
         function updateChart(ticker) {
             if (!ticker) return;
             activeTicker = ticker;
+
+            // Update the h2 heading with the current ticker name
+            chartTitleEl.textContent = `${ticker} Candlestick Chart`;
 
             const period = periodSelect.value;
             const interval = intervalSelect.value;
@@ -345,7 +374,7 @@
                         }]);
                         chart.updateOptions({
                             title: {
-                                text: `${ticker} Stock Price`
+                                text: `${ticker} Candlestick Chart`
                             },
                             yaxis: {
                                 min: yAxisMin,
@@ -384,7 +413,7 @@
                                 data: seriesData
                             }],
                             title: {
-                                text: `${ticker} Stock Price`,
+                                text: `${ticker} Candlestick Chart`,
                                 align: 'left'
                             },
                             xaxis: {
@@ -497,6 +526,38 @@
         }
         zoomInBtn.addEventListener('click', () => zoomY(0.9));
         zoomOutBtn.addEventListener('click', () => zoomY(1.1));
+        
+        // Function to select the next stock in the list
+        function nextStock() {
+            const currentActive = document.querySelector('.watchlist-item.active');
+            if (currentActive) {
+                const nextSibling = currentActive.nextElementSibling;
+                if (nextSibling) {
+                    nextSibling.click();
+                }
+            }
+        }
+
+        // Function to select the previous stock in the list
+        function prevStock() {
+            const currentActive = document.querySelector('.watchlist-item.active');
+            if (currentActive) {
+                const prevSibling = currentActive.previousElementSibling;
+                if (prevSibling) {
+                    prevSibling.click();
+                }
+            }
+        }
+        
+        // Function to select the next stock from the chart buttons
+        function nextChartStock() {
+            nextStock();
+        }
+
+        // Function to select the previous stock from the chart buttons
+        function prevChartStock() {
+            prevStock();
+        }
 
         // Event listeners for watchlist controls
         sortAscBtn.addEventListener('click', () => {
@@ -522,6 +583,11 @@
         watchlistSelector.addEventListener('change', () => {
             updateWatchlist();
         });
+        prevStockBtn.addEventListener('click', prevStock);
+        nextStockBtn.addEventListener('click', nextStock);
+        prevChartBtn.addEventListener('click', prevChartStock);
+        nextChartBtn.addEventListener('click', nextChartStock);
+
 
         // Theme toggle functionality
         toggleThemeBtn.addEventListener('click', () => {
