@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Candlestick Chart with Watchlist & Sorting</title>
+    <title>Bullfolio</title>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <style>
     :root {
@@ -266,7 +266,8 @@
 
         <div class="watchlist-container">
             <div class="watchlist-header">
-                <h3>My Watchlist</h3>
+                <h3>Bullfolio Screener</h3>
+                <br>
                 <div class="controls">
                     <label for="watchlist-selector">Select Watchlist:</label>
                     <select id="watchlist-selector">
@@ -349,12 +350,12 @@
             activeTicker = ticker;
 
             // Update the h2 heading with the current ticker name
-            chartTitleEl.textContent = `${ticker} Candlestick Chart`;
+            chartTitleEl.textContent = `${ticker}`;
 
             const period = periodSelect.value;
             const interval = intervalSelect.value;
-            //const url = `https://bullfolio-server.onrender.com/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;
-            const url = `http://127.0.0.1:5000/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;    //local host
+            const url = `https://bullfolio-server.onrender.com/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;
+            //const url = `http://127.0.0.1:5000/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;    //local host
 
             fetch(url)
                 .then(response => {
@@ -441,7 +442,7 @@
                             },
                             yaxis: {
                                 title: {
-                                    text: 'Price (USD)'
+                                    text: 'Price'
                                 },
                                 tooltip: {
                                     enabled: true
@@ -482,8 +483,8 @@
             const endRank = endRankInput.value;
             const watchlist = watchlistSelector.value;
 
-            //let url = `https://bullfolio-server.onrender.com/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;
-            let url = `http://127.0.0.1:5000/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;   //local host
+            let url = `https://bullfolio-server.onrender.com/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;
+            //let url = `http://127.0.0.1:5000/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;   //local host
             if (sortBy) {
                 url += `&sort=${sortOrder}&sortBy=${sortBy}`;
             }
