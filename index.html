@@ -122,6 +122,19 @@
         margin: 0;
         text-align: left;
     }
+    
+    /* 🟢 NEW CSS for last updated date */
+    .last-updated-text {
+        font-size: 0.85rem;
+        color: var(--text-color);
+        margin-top: 5px;
+        text-align: right; 
+        opacity: 0.7;
+    }
+    
+    body.dark-mode .last-updated-text {
+        color: var(--text-color);
+    }
 
     .sort-controls {
         display: flex;
@@ -261,6 +274,7 @@
                         <option value="usa">USA</option>
                     </select>
                 </div>
+                <p id="last-updated-date" class="last-updated-text"></p>
             </div>
             <div class="controls-box">
                 <div class="range-controls">
@@ -312,6 +326,8 @@
         const prevChartBtn = document.getElementById('prevChartBtn');
         const nextChartBtn = document.getElementById('nextChartBtn');
         const chartTitleEl = document.getElementById('chart-title');
+        // 🟢 NEW CONSTANT
+        const lastUpdatedDateEl = document.getElementById('last-updated-date');
 
         let chart = null;
         let yAxisMin = 0;
@@ -337,8 +353,8 @@
 
             const period = periodSelect.value;
             const interval = intervalSelect.value;
-            const url = `https://bullfolio-server.onrender.com/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;
-            //const url = `http://127.0.0.1:5000/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;    //local host
+            //const url = `https://bullfolio-server.onrender.com/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;
+            const url = `http://127.0.0.1:5000/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;    //local host
 
             fetch(url)
                 .then(response => {
@@ -466,8 +482,8 @@
             const endRank = endRankInput.value;
             const watchlist = watchlistSelector.value;
 
-            let url = `https://bullfolio-server.onrender.com/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;
-            //let url = `http://127.0.0.1:5000/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;   //local host
+            //let url = `https://bullfolio-server.onrender.com/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;
+            let url = `http://127.0.0.1:5000/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;   //local host
             if (sortBy) {
                 url += `&sort=${sortOrder}&sortBy=${sortBy}`;
             }
@@ -476,11 +492,21 @@
                 .then(response => response.json())
                 .then(data => {
                     watchlistEl.innerHTML = '';
+                    
+                    // 🟢 Handle the new JSON structure
                     if (data.error) {
                         watchlistEl.innerHTML = `<li style='color:red;'>${data.error}</li>`;
+                        lastUpdatedDateEl.textContent = `Last updated: N/A`; // Set to N/A on error
                         return;
                     }
-                    data.forEach(item => {
+
+                    const stocks = data.stocks;
+                    const dateModified = data.date_modified;
+                    
+                    // 🟢 Update the "Last Updated" text
+                    lastUpdatedDateEl.textContent = `Last updated: ${dateModified}`;
+
+                    stocks.forEach(item => { // Iterate over the 'stocks' array
                         const li = document.createElement('li');
                         li.classList.add('watchlist-item');
                         const selectedReturn = item[sortBy || '1 Year Returns'];
@@ -497,13 +523,15 @@
                         });
                         watchlistEl.appendChild(li);
                     });
-                    if (data.length > 0) {
-                        updateChart(data[0].Symbols);
+                    
+                    if (stocks.length > 0) {
+                        updateChart(stocks[0].Symbols);
                         watchlistEl.children[0].classList.add('active');
                     }
                 })
                 .catch(error => {
                     watchlistEl.innerHTML = "<li style='color:red;'>Could not load watchlist.</li>";
+                    lastUpdatedDateEl.textContent = `Last updated: N/A`; // Set to N/A on fetch error
                 });
         }
 

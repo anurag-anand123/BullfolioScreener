@@ -12,6 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # In-memory cache for the watchlist data
+# Cache will now store a dictionary: {'data': list_of_stocks, 'date_modified': 'date_string'}
 _watchlist_cache = {}
 
 # In-memory cache for stock data with a timestamp for expiration
@@ -21,10 +22,14 @@ CACHE_DURATION_SECONDS = 30 * 60  # Cache data for 30 minutes
 def load_watchlist_data(watchlist_name):
     """
     Loads and caches the watchlist data from the specified CSV file.
+    
+    Returns:
+        tuple: (list_of_stock_data, date_modified_string) or (None, None) on error.
     """
     global _watchlist_cache
     if watchlist_name in _watchlist_cache:
-        return _watchlist_cache[watchlist_name]
+        # Return the stored tuple (data, date_modified)
+        return _watchlist_cache[watchlist_name]['data'], _watchlist_cache[watchlist_name]['date_modified']
     
     # Map watchlist name to filename
     filenames = {
@@ -34,18 +39,28 @@ def load_watchlist_data(watchlist_name):
     
     filename = filenames.get(watchlist_name)
     if not filename:
-        return None
+        return None, None # Return tuple for consistency
 
     try:
         data = []
+        date_modified = "N/A" # Default value
+        
         # Check if file exists before trying to open it
         if not os.path.exists(filename):
             print(f"File {filename} not found.", file=sys.stderr)
-            return None
+            return None, None
 
         with open(filename, mode='r') as file:
             reader = csv.DictReader(file)
-            for row in reader:
+            
+            # Read all rows and determine date_modified
+            for i, row in enumerate(reader):
+                
+                # 🟢 Extract the Date Modified value from the first row
+                if i == 0 and 'Date Modified' in row:
+                    # Use .strip() to clean up potential extra spaces
+                    date_modified = row['Date Modified'].strip()
+                
                 # Convert string returns to float and store them
                 row['1 Year Returns'] = float(row.get('1 Year Returns', 0))
                 row['2 Year Returns'] = float(row.get('2 Year Returns', 0))
@@ -56,18 +71,24 @@ def load_watchlist_data(watchlist_name):
                 if row['1 Year Returns'] != 0:
                     data.append(row)
                     
-        _watchlist_cache[watchlist_name] = data
-        return data
+        # 🟢 Store the data and date modified string in the cache
+        _watchlist_cache[watchlist_name] = {
+            'data': data,
+            'date_modified': date_modified
+        }
+        
+        return data, date_modified
     except Exception as e:
         print(f"Error loading watchlist data from {filename}: {e}", file=sys.stderr)
-        return None
+        return None, None
 
 # Route to serve the watchlist from the cached data
 @app.route('/api/watchlist')
 def get_watchlist():
     try:
         watchlist_name = request.args.get('watchlist', 'india')
-        watchlist_data = load_watchlist_data(watchlist_name)
+        # 🟢 Receive the data and the date_modified string
+        watchlist_data, date_modified = load_watchlist_data(watchlist_name)
         
         if watchlist_data is None:
             return jsonify({"error": f"Watchlist '{watchlist_name}' not found or could not be processed."}), 404
@@ -100,7 +121,11 @@ def get_watchlist():
             else:
                 filtered_data.sort(key=lambda x: x[sort_by], reverse=False)
 
-        return jsonify(filtered_data)
+        # 🟢 Return a dictionary containing both the list data (now called 'stocks') and the date modified
+        return jsonify({
+            "stocks": filtered_data,
+            "date_modified": date_modified
+        })
     except Exception as e:
         error_traceback = traceback.format_exc()
         print(f"An error occurred in get_watchlist: {error_traceback}", file=sys.stderr)
