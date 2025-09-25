@@ -338,6 +338,7 @@
             const period = periodSelect.value;
             const interval = intervalSelect.value;
             const url = `https://bullfolio-server.onrender.com/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;
+            //const url = `http://127.0.0.1:5000/api/stock_data?ticker=${ticker}&period=${period}&interval=${interval}`;    //local host
 
             fetch(url)
                 .then(response => {
@@ -466,6 +467,7 @@
             const watchlist = watchlistSelector.value;
 
             let url = `https://bullfolio-server.onrender.com/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;
+            //let url = `http://127.0.0.1:5000/api/watchlist?watchlist=${watchlist}&start_rank=${startRank}&end_rank=${endRank}`;   //local host
             if (sortBy) {
                 url += `&sort=${sortOrder}&sortBy=${sortBy}`;
             }
