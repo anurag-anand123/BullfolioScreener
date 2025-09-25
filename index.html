@@ -123,7 +123,6 @@
         text-align: left;
     }
     
-    /* 🟢 NEW CSS for last updated date */
     .last-updated-text {
         font-size: 0.85rem;
         color: var(--text-color);
@@ -327,7 +326,6 @@
         const prevChartBtn = document.getElementById('prevChartBtn');
         const nextChartBtn = document.getElementById('nextChartBtn');
         const chartTitleEl = document.getElementById('chart-title');
-        // 🟢 NEW CONSTANT
         const lastUpdatedDateEl = document.getElementById('last-updated-date');
 
         let chart = null;
@@ -494,20 +492,18 @@
                 .then(data => {
                     watchlistEl.innerHTML = '';
                     
-                    // 🟢 Handle the new JSON structure
                     if (data.error) {
                         watchlistEl.innerHTML = `<li style='color:red;'>${data.error}</li>`;
-                        lastUpdatedDateEl.textContent = `Last updated: N/A`; // Set to N/A on error
+                        lastUpdatedDateEl.textContent = `Last updated: N/A`;
                         return;
                     }
 
                     const stocks = data.stocks;
                     const dateModified = data.date_modified;
                     
-                    // 🟢 Update the "Last Updated" text
                     lastUpdatedDateEl.textContent = `Last updated: ${dateModified}`;
 
-                    stocks.forEach(item => { // Iterate over the 'stocks' array
+                    stocks.forEach(item => { 
                         const li = document.createElement('li');
                         li.classList.add('watchlist-item');
                         const selectedReturn = item[sortBy || '1 Year Returns'];
@@ -532,7 +528,7 @@
                 })
                 .catch(error => {
                     watchlistEl.innerHTML = "<li style='color:red;'>Could not load watchlist.</li>";
-                    lastUpdatedDateEl.textContent = `Last updated: N/A`; // Set to N/A on fetch error
+                    lastUpdatedDateEl.textContent = `Last updated: N/A`;
                 });
         }
 
@@ -549,7 +545,7 @@
                         min: yAxisMin,
                         max: yAxisMax,
                         labels: {
-                            formatter: formatYAxisLabel // Re-apply formatter during zoom
+                            formatter: formatYAxisLabel 
                         }
                     }
                 });
@@ -601,16 +597,33 @@
         });
         returnPeriodSelect.addEventListener('change', () => {
             const sortBy = returnPeriodSelect.value;
-            const currentSortOrder = 'asc'; // Default sort order for a new sort type
+            const currentSortOrder = 'asc'; 
             updateWatchlist(currentSortOrder, sortBy);
         });
         applyRangeBtn.addEventListener('click', () => {
-            updateWatchlist(undefined, undefined); // Resets sorting
+            updateWatchlist(undefined, undefined); 
         });
 
         // Event listeners for chart controls
-        periodSelect.addEventListener('change', () => updateChart(activeTicker));
+        periodSelect.addEventListener('change', () => {
+            const selectedPeriod = periodSelect.value;
+
+            // 🟢 NEW LOGIC: Force '1wk' interval for long periods
+            if (['3y', '5y', '10y'].includes(selectedPeriod)) {
+                // Set the interval to '1wk'
+                intervalSelect.value = '1wk';
+            } 
+            else if (['1mo', '3mo', '6mo', '1y'].includes(selectedPeriod)) {
+                intervalSelect.value = '1d';
+            }
+            // Optional: You could add logic here to reset to '1d' if a short period is chosen,
+            // but for now, we only implement the forcing of the '1wk' interval.
+            
+            updateChart(activeTicker);
+        });
+        
         intervalSelect.addEventListener('change', () => updateChart(activeTicker));
+        
         watchlistSelector.addEventListener('change', () => {
             updateWatchlist();
         });
@@ -625,7 +638,7 @@
             body.classList.toggle('dark-mode');
             const isDarkMode = body.classList.contains('dark-mode');
             const themeMode = isDarkMode ? 'dark' : 'light';
-            if (chart) { // Ensure chart exists before updating
+            if (chart) { 
                 chart.updateOptions({
                     theme: {
                         mode: themeMode
@@ -633,7 +646,7 @@
                     tooltip: {
                         theme: isDarkMode ? 'light' : 'dark'
                     },
-                    yaxis: { // Also re-apply formatter when theme changes
+                    yaxis: { 
                         labels: {
                             formatter: formatYAxisLabel
                         }
